@@ -1,0 +1,47 @@
+apiVersion: templates.gatekeeper.sh/v1
+kind: ConstraintTemplate
+metadata:
+  labels:
+    {{- include "gatekeeper.labels" . | nindent 4 }}
+  annotations:
+    description: Controls running of privileged containers.
+  name: k8spspprivilegedcontainer2
+spec:
+  crd:
+    spec:
+      names:
+        kind: K8sPSPPrivilegedContainer2
+      validation:
+        openAPIV3Schema:
+          type: object
+          properties:
+            excludedResources:
+              type: array
+              items:
+                type: string
+  targets:
+  - rego: |
+      package k8spspprivilegedcontainer2
+
+      included(resourceName, exclusions) = true {
+        patterns := {pattern | exclusion := exclusions[_]; pattern := sprintf("^%v$", [exclusion])}
+        resource := concat("/", [input.review.object.metadata.namespace, resourceName])
+        matches := {match | match := patterns[_]; true == regex.match(match, resource)}
+        count(matches) == 0
+      }
+
+      violation[{"msg": msg, "details": {}}] {
+          c := input_containers[_]
+          included(c.name, input.parameters.excludedResources)
+          c.securityContext.privileged
+          msg := sprintf("Privileged container is not allowed: %v, securityContext: %v", [c.name, c.securityContext])
+      }
+
+      input_containers[c] {
+          c := input.review.object.spec.containers[_]
+      }
+
+      input_containers[c] {
+          c := input.review.object.spec.initContainers[_]
+      }
+    target: admission.k8s.gatekeeper.sh

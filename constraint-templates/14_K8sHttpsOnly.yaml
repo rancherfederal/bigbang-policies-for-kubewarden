@@ -1,0 +1,45 @@
+apiVersion: templates.gatekeeper.sh/v1
+kind: ConstraintTemplate
+metadata:
+  name: k8shttpsonly2
+  labels:
+    {{- include "gatekeeper.labels" . | nindent 4 }}
+  annotations:
+    description: "Requires Ingress resources to be HTTPS only; TLS configuration should be set and `kubernetes.io/ingress.allow-http` annotation equals false."
+spec:
+  crd:
+    spec:
+      names:
+        kind: K8sHttpsOnly2
+      validation:
+        # Schema for the `parameters` field
+        openAPIV3Schema:
+          type: object
+          properties:
+            excludedResources:
+              type: array
+              items:
+                type: string
+  targets:
+    - target: admission.k8s.gatekeeper.sh
+      rego: |
+        package k8shttpsonly2
+        included(resourceName, exclusions) = true {
+          patterns := {pattern | exclusion := exclusions[_]; pattern := sprintf("^%v$", [exclusion])}
+          resource := concat("/", [input.review.object.metadata.namespace, resourceName])
+          matches := {match | match := patterns[_]; true == regex.match(match, resource)}
+          count(matches) == 0
+        }
+        violation[{"msg": msg}] {
+          input.review.object.kind == "Ingress"
+          included(input.review.object.metadata.name, input.parameters.excludedResources)
+          re_match("^(extensions|networking.k8s.io)/", input.review.object.apiVersion)
+          ingress := input.review.object
+          not https_complete(ingress)
+          msg := sprintf("Ingress should be https. tls configuration and allow-http=false annotation are required for %v", [ingress.metadata.name])
+        }
+        https_complete(ingress) = true {
+          ingress.spec["tls"]
+          count(ingress.spec.tls) > 0
+          ingress.metadata.annotations["kubernetes.io/ingress.allow-http"] == "false"
+        }

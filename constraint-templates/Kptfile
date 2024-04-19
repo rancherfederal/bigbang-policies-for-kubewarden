@@ -1,0 +1,18 @@
+apiVersion: kpt.dev/v1
+kind: Kptfile
+metadata:
+  name: constraint-templates
+upstream:
+  type: git
+  git:
+    repo: https://repo1.dso.mil/big-bang/product/packages/policy
+    directory: /chart/templates/constraint-templates
+    ref: 3.15.0-bb.6
+  updateStrategy: resource-merge
+upstreamLock:
+  type: git
+  git:
+    repo: https://repo1.dso.mil/big-bang/product/packages/policy
+    directory: /chart/templates/constraint-templates
+    ref: 3.15.0-bb.6
+    commit: ba4b92ca94285b70f80f86b1d79ec76b44797039

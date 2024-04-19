@@ -1,0 +1,40 @@
+apiVersion: templates.gatekeeper.sh/v1
+kind: ConstraintTemplate
+metadata:
+  name: k8sblocknodeport
+  labels:
+    {{- include "gatekeeper.labels" . | nindent 4 }}
+spec:
+  crd:
+    spec:
+      names:
+        kind: K8sBlockNodePort
+      validation:
+        # Schema for the `parameters` field
+        openAPIV3Schema:
+          type: object
+          properties:
+            tags:
+              type: array
+              items:
+                type: string
+            excludedResources:
+              type: array
+              items:
+                type: string
+  targets:
+    - target: admission.k8s.gatekeeper.sh
+      rego: |
+       package k8sblocknodeport
+        included(resourceName, exclusions) = true {
+          patterns := {pattern | exclusion := exclusions[_]; pattern := sprintf("^%v$", [exclusion])}
+          resource := concat("/", [input.review.object.metadata.namespace, resourceName])
+          matches := {match | match := patterns[_]; true == regex.match(match, resource)}
+          count(matches) == 0
+        }
+        violation[{"msg": msg}] {
+          input.review.kind.kind == "Service"
+          input.review.object.spec.type == "NodePort"
+          included(input.review.object.metadata.name, input.parameters.excludedResources)
+          msg := sprintf("Service type can't be NodePort for the service %v",  [input.review.object.metadata.name])
+        }

@@ -1,0 +1,34 @@
+apiVersion: templates.gatekeeper.sh/v1
+kind: ConstraintTemplate
+metadata:
+  name: k8sprotectednamespaces
+  labels:
+    {{- include "gatekeeper.labels" . | nindent 4 }}
+spec:
+  crd:
+    spec:
+      names:
+        kind: K8sProtectedNamespaces
+      validation:
+        # Schema for the `parameters` field
+        openAPIV3Schema:
+          type: object
+          properties:
+            resources:
+              type: array
+              items:
+                type: string
+  targets:
+    - target: admission.k8s.gatekeeper.sh
+      rego: |
+
+        package k8sprotectednamespaces
+
+        violation[{"msg": msg}] {
+          not input.review.object.metadata.namespace
+          msg := "Default Namespace is protected. Please specify an alternate valid namespace"
+        }
+        violation[{"msg": msg}] {
+          count({input.review.object.metadata.namespace} & cast_set(input.parameters.resources)) == 1
+          msg := sprintf("namespace <%v> is protected. This is the list of protected namespaces <%v>", [input.review.object.metadata.namespace, input.parameters.resources])
+        }
