@@ -55,4 +55,3 @@ valid_proc_mount(str) {
 valid_proc_mount(str) {
     lower(str) == "unmasked"
 }
-    target: admission.k8s.gatekeeper.sh

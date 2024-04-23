@@ -26,4 +26,3 @@ forbidden_sysctl(sysctl) {
 forbidden_sysctl(sysctl) {
     startswith(sysctl, trim(input.parameters.forbiddenSysctls[_], "*"))
 }
-    target: admission.k8s.gatekeeper.sh

@@ -19,4 +19,3 @@ input_share_hostnamespace(o) {
 input_share_hostnamespace(o) {
     o.spec.hostIPC
 }
-    target: admission.k8s.gatekeeper.sh

@@ -21,4 +21,3 @@ input_containers[c] {
 input_containers[c] {
     c := input.review.object.spec.initContainers[_]
 }
-    target: admission.k8s.gatekeeper.sh

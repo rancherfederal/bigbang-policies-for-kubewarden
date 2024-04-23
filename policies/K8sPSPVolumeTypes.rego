@@ -23,4 +23,3 @@ input_volume_type_allowed(field) {
 input_volume_type_allowed(field) {
     field == input.parameters.volumes[_]
 }
-    target: admission.k8s.gatekeeper.sh

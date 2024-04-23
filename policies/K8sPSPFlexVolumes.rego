@@ -27,4 +27,3 @@ input_flexvolumes[v] {
 has_field(object, field) = true {
     object[field]
 }
-    target: admission.k8s.gatekeeper.sh
